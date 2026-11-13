@@ -12,7 +12,7 @@ def calculate(source_path):
         with open(source_path, 'r', encoding='utf-8') as f:
             raw = f.read()
     except FileNotFoundError:
-        print("退出码：1", file=sys.stderr)
+        print(f"退出码：1，{source_path}不存在", file=sys.stderr)
         sys.exit(1)
 
     # # 文件为空则退出，退出码为0
@@ -23,7 +23,7 @@ def calculate(source_path):
     words = {}
     total_lines = len(raw.splitlines())
     paragrahs = 0
-    total_words = len(raw.strip())
+    total_words = sum(1 for w in raw if not w.isspace())
     key = ''
     is_in_paragraph = False # 是否在段内
 
@@ -61,6 +61,8 @@ def display(total_lines, paragrahs, total_words, top_words, words, topn, target_
         topn = int(topn)
     except ValueError:
         print(f'{topn} is not a number.')
+    except TypeError:
+        print(f'{topn} is not a number')
 
     repeat = ''
     if len(words) > 0:
@@ -89,9 +91,9 @@ def main():
     now = datetime.now()
     # 参数化输入路径、topN、输出路径，输出文件名由输入名派生或由--out指定，输入路径要有默认值，topN要能容错
     parser = argparse.ArgumentParser()
-    parser.add_argument('source_path', default='corpus/corpus_sample.txt')
-    parser.add_argument('topn')
-    parser.add_argument('-o', '--out', dest='target', default=f's1_t01_result_{str(now)}.txt')
+    parser.add_argument('--source_path', dest='source_path', default='corpus/corpus_sample.txt')
+    parser.add_argument('--topn', dest='topn', default='10')
+    parser.add_argument('-o', '--out', dest='target', default=f's1_t01_result_{str(now.strftime("%Y-%m-%d"))}.txt')
 
     args = parser.parse_args()
 
