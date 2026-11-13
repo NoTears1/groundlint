@@ -57,7 +57,7 @@ def calculate(source_path):
 
     return total_lines, paragrahs, total_words, top_words, words
 
-def display(total_lines, paragrahs, total_words, top_words, words, topn, target_path):
+def display(source_path, total_lines, paragrahs, total_words, top_words, words, topn, target_path):
     topn_title = '词\t次数\n'
     j = 0
     word = ''
@@ -65,7 +65,7 @@ def display(total_lines, paragrahs, total_words, top_words, words, topn, target_
     try:
         topn = int(topn)
         if len(words) < topn:
-             topn = len(words)
+             topn = len(words) - 1
         repeat = ''
         if len(words) > 0:
             for j in range(topn):
@@ -85,7 +85,7 @@ def display(total_lines, paragrahs, total_words, top_words, words, topn, target_
                 k += 1
                 if words[top_words[k]] < words[top_words[topn]] or words[top_words[k]] == 1:
                     break
-        result = f'== 语料摘要 ==\n来源文件：\tcorpus_sample.txt\n总行数：\t{total_lines}\n非空段数：\t{paragrahs}\n总字数（不含空白）：\t{total_words}\n== 高频词 TOP{topn} ==\n'
+        result = f'== 语料摘要 ==\n来源文件：\t{source_path}\n总行数：\t{total_lines}\n非空段数：\t{paragrahs}\n总字数（不含空白）：\t{total_words}\n== 高频词 TOP{topn} ==\n'
         result += topn_title + '== 高频次数 ==\n'+repeat
 
         with open(target_path, 'w', encoding='utf-8') as f:
@@ -93,14 +93,16 @@ def display(total_lines, paragrahs, total_words, top_words, words, topn, target_
 
         print(result)
     except ValueError:
-            print(f'{topn} is not a number.')
+            print(f'{topn} is not a number.', file=sys.stderr)
+            sys.exit(1)
     except TypeError:
-            print(f'{topn} is not a number')
+            print(f'{topn} is not a number', file=sys.stderr)
+            sys.exit(1)
 def main():
     now = datetime.now()
     # 参数化输入路径、topN、输出路径，输出文件名由输入名派生或由--out指定，输入路径要有默认值，topN要能容错
     parser = argparse.ArgumentParser()
-    parser.add_argument('--source_path', dest='source_path', default='corpus/corpus_sample.txt')
+    parser.add_argument('--source_path', dest='source_path', default='corpus/corpus_sample_v3.txt')
     parser.add_argument('--topn', dest='topn', default='10')
     parser.add_argument('-o', '--out', dest='target', default=f's1_t01_result_{str(now.strftime("%Y-%m-%d"))}.txt')
 
@@ -110,7 +112,7 @@ def main():
     target_path = Path(__file__).parent/args.target
 
     total_lines, paragrahs, total_words, top_words, words = calculate(source_path)
-    display(total_lines, paragrahs, total_words, top_words, words, args.topn, target_path)
+    display(source_path, total_lines, paragrahs, total_words, top_words, words, args.topn, target_path)
 
 if __name__ == '__main__':
     main()
