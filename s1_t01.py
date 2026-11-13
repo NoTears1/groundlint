@@ -64,34 +64,38 @@ def display(total_lines, paragrahs, total_words, top_words, words, topn, target_
     k = 0
     try:
         topn = int(topn)
+        if len(words) < topn:
+             topn = len(words)
+        repeat = ''
+        if len(words) > 0:
+            for j in range(topn):
+                topn_title += f'{top_words[j]}\t{words[top_words[j]]}\n'
+
+            cnt = 1
+            while True:
+                
+                word += top_words[k]
+                if  words[top_words[k+1]] == words[top_words[k]]:
+                    word += '、'
+                    cnt += 1
+                else:
+                    repeat += f'{words[top_words[k]]}次：{word}\t全文共{cnt}个\n'
+                    word = ''
+                    cnt = 1
+                k += 1
+                if words[top_words[k]] < words[top_words[topn]] or words[top_words[k]] == 1:
+                    break
+        result = f'== 语料摘要 ==\n来源文件：\tcorpus_sample.txt\n总行数：\t{total_lines}\n非空段数：\t{paragrahs}\n总字数（不含空白）：\t{total_words}\n== 高频词 TOP{topn} ==\n'
+        result += topn_title + '== 高频次数 ==\n'+repeat
+
+        with open(target_path, 'w', encoding='utf-8') as f:
+            f.write(result)
+
+        print(result)
     except ValueError:
-        print(f'{topn} is not a number.')
+            print(f'{topn} is not a number.')
     except TypeError:
-        print(f'{topn} is not a number')
-
-    repeat = ''
-    if len(words) > 0:
-        for j in range(topn):
-            topn_title += f'{top_words[j]}\t{words[top_words[j]]}\n'
-
-        while True:
-            word += top_words[k]
-            if  words[top_words[k+1]] == words[top_words[k]]:
-                word += '、'
-            else:
-                repeat += f'{words[top_words[k]]}次：{word}\n'
-                word = ''
-            k += 1
-            if words[top_words[k]] < words[top_words[topn]] or words[top_words[k]] == 1:
-                break
-    result = f'== 语料摘要 ==\n来源文件：\tcorpus_sample.txt\n总行数：\t{total_lines}\n非空段数：\t{paragrahs}\n总字数（不含空白）：\t{total_words}\n== 高频词 TOP{topn} ==\n'
-    result += topn_title + '== 高频次数 ==\n'+repeat
-
-    with open(target_path, 'w', encoding='utf-8') as f:
-        f.write(result)
-
-    print(result)
-
+            print(f'{topn} is not a number')
 def main():
     now = datetime.now()
     # 参数化输入路径、topN、输出路径，输出文件名由输入名派生或由--out指定，输入路径要有默认值，topN要能容错
