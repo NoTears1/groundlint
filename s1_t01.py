@@ -2,121 +2,104 @@
 # 总行数、段数（两个相邻换行符之间没有非空字符）、总字数（所有非空字符）、高频词（连续两个以上的汉字）Top10
 
 from pathlib import Path
+import argparse
+from datetime import datetime
+import sys
 
-source_path = Path(__file__).parent/'corpus/corpus_sample_v2.txt'
-target_path = Path(__file__).parent
-try:
-    with open(source_path, 'r', encoding='utf-8') as f:
-        raw = f.read()
-except FileNotFoundError:
-    print("退出码：1")
-    exit()
+def calculate(source_path):
+    # 打开语料文件
+    try:
+        with open(source_path, 'r', encoding='utf-8') as f:
+            raw = f.read()
+    except FileNotFoundError:
+        print("退出码：1", file=sys.stderr)
+        sys.exit(1)
 
-if len(raw) == 0:
-    print("退出码：0")
-    exit()
+    # # 文件为空则退出，退出码为0
+    # if len(raw) == 0:
+    #     print("退出码：0", file=sys.stderr)
+    #     sys.exit(0)
 
-words = {}
-total_lines = 0
-paragrahs = []
-total_words = 0
-key = ''
-is_paragraph = True #判断是否是两个连续换行
+    words = {}
+    total_lines = len(raw.splitlines())
+    paragrahs = 0
+    total_words = len(raw.strip())
+    key = ''
+    is_in_paragraph = False # 是否在段内
 
-for i, word in enumerate(raw):
-
-    if word == '\n':
-        total_lines += 1
-        if is_paragraph == True:
-            paragrahs.append(0)
-
-        if len(key) >= 2:
-            if key in words.keys():
-                words[key] += 1
-            else:
-                words[key] = 1 
-        key = ''
-        is_paragraph = True
-    elif word in '\t ':
-        if len(key) >= 2:
-            if key in words.keys():
-                words[key] += 1
-            else:
-                words[key] = 1 
-        key = ''
-    elif word in '[]【】()，。、“”；：！’‘（）()——-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':
-        is_paragraph = False
-        if len(key) >= 2:
-            if key in words.keys():
-                words[key] += 1
-            else:
-                words[key] = 1 
-        key = ''
-        total_words += 1
-    else:
-        is_paragraph = False
-        key += word
-        total_words += 1
+    for i, word in enumerate(raw):
         
+        if '\u4e00' <= word and '\u9fff' >= word: # 统计词数
+            key += word
 
+        else:
+            if len(key) >= 2:
+                if key in words.keys():
+                    words[key] += 1
+                else:
+                    words[key] = 1
+            key = ''
 
-    # if i == '\n':
-        
-    #     total_lines += 1
-    #     # if len(paragrahs) > 0 and paragrahs[-1] == 0:
-    #     #     paragrahs[-1] += 1
-    #     # else:
-    #     if is_paragraph == True:
-    #         paragrahs.append(0)
-    #     is_paragraph = True
+    for line in raw.splitlines():
+        if len(line.strip()) == 0:
+            is_in_paragraph = False
+        else:
+            if not is_in_paragraph:
+                paragrahs += 1
+                is_in_paragraph = True
 
-    #     if len(key) >= 2:
-    #         if key in words.keys():
-    #             words[key] += 1
-    #         else:
-    #             words[key] = 1 
-    #     key = ''
-    # elif i not in ' \t[]【】()，。、“”；：！’‘（）——1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':
-    #     total_words += 1
-    #     key += i
-    #     is_paragraph = False
-    # else:
-    #     if len(key) >= 2:
-    #         if key in words.keys():
-    #             words[key] += 1
-    #         else:
-    #             words[key] = 1 
-    #     key = ''
+    top_words = sorted(words, reverse=True, key=words.get)
 
-    #     is_paragraph = False
+    return total_lines, paragrahs, total_words, top_words, words
 
-# words.pop('')
-top_words = sorted(words, reverse=True, key=words.get)
-# print(words)
-topn = '词\t次数\n'
-j = 0
-word = ''
-k = 0
-top = 3
-repeat = ''
+def display(total_lines, paragrahs, total_words, top_words, words, topn, target_path):
+    topn_title = '词\t次数\n'
+    j = 0
+    word = ''
+    k = 0
+    try:
+        topn = int(topn)
+    except ValueError:
+        print(f'{topn} is not a number.')
 
-for j in range(top):
-    topn += f'{top_words[j]}\t{words[top_words[j]]}\n'
+    repeat = ''
+    if len(words) > 0:
+        for j in range(topn):
+            topn_title += f'{top_words[j]}\t{words[top_words[j]]}\n'
 
-while True:
-    word += top_words[k]
-    if  words[top_words[k+1]] == words[top_words[k]]:
-        word += '、'
-    else:
-        repeat += f'{words[top_words[k]]}次：{word}\n'
-        word = ''
-    k += 1
-    if words[top_words[k]] < words[top_words[top]] or words[top_words[k]] == 1:
-        break
-result = f'== 语料摘要 ==\n来源文件：\tcorpus_sample.txt\n总行数：\t{total_lines+1}\n非空段数：\t{len(paragrahs)+1}\n总字数（不含空白）：\t{total_words}\n== 高频词 TOP{top} ==\n'
-result += topn + '== 高频次数 ==\n'+repeat
+        while True:
+            word += top_words[k]
+            if  words[top_words[k+1]] == words[top_words[k]]:
+                word += '、'
+            else:
+                repeat += f'{words[top_words[k]]}次：{word}\n'
+                word = ''
+            k += 1
+            if words[top_words[k]] < words[top_words[topn]] or words[top_words[k]] == 1:
+                break
+    result = f'== 语料摘要 ==\n来源文件：\tcorpus_sample.txt\n总行数：\t{total_lines}\n非空段数：\t{paragrahs}\n总字数（不含空白）：\t{total_words}\n== 高频词 TOP{topn} ==\n'
+    result += topn_title + '== 高频次数 ==\n'+repeat
 
-with open(target_path/'s1_t01_result_v2.txt', 'w', encoding='utf-8') as f:
-     f.write(result)
+    with open(target_path, 'w', encoding='utf-8') as f:
+        f.write(result)
 
-print(result)
+    print(result)
+
+def main():
+    now = datetime.now()
+    # 参数化输入路径、topN、输出路径，输出文件名由输入名派生或由--out指定，输入路径要有默认值，topN要能容错
+    parser = argparse.ArgumentParser()
+    parser.add_argument('source_path', default='corpus/corpus_sample.txt')
+    parser.add_argument('topn')
+    parser.add_argument('-o', '--out', dest='target', default=f's1_t01_result_{str(now)}.txt')
+
+    args = parser.parse_args()
+
+    source_path = Path(args.source_path)
+    target_path = Path(__file__).parent/args.target
+
+    total_lines, paragrahs, total_words, top_words, words = calculate(source_path)
+    display(total_lines, paragrahs, total_words, top_words, words, args.topn, target_path)
+
+if __name__ == '__main__':
+    main()
