@@ -27,9 +27,9 @@ def calculate(source_path):
     key = ''
     is_in_paragraph = False # 是否在段内
 
-    for i, word in enumerate(raw):
+    for i, word in enumerate(raw):# 统计词数
         
-        if '\u4e00' <= word and '\u9fff' >= word: # 统计词数
+        if '\u4e00' <= word and '\u9fff' >= word: 
             key += word
 
         else:
@@ -39,8 +39,13 @@ def calculate(source_path):
                 else:
                     words[key] = 1
             key = ''
-
-    for line in raw.splitlines():
+    if key != '':
+        if len(key) >= 2:
+                        if key in words.keys():
+                            words[key] += 1
+                        else:
+                            words[key] = 1
+    for line in raw.splitlines(): # 统计段数
         if len(line.strip()) == 0:
             is_in_paragraph = False
         else:
